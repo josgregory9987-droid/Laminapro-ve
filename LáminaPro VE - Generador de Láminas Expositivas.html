@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LáminaPro VE | Generador de Láminas Expositivas de Venezuela</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Tipografías escolares, limpias y académicas -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Patrick+Hand&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            escolar: ['Fredoka', 'cursive', 'sans-serif'],
+            mano: ['Patrick Hand', 'cursive'],
+            academico: ['Merriweather', 'serif'],
+          },
+          colors: {
+            ve: {
+              azul: '#00247D',
+              amarillo: '#FFCC00',
+              rojo: '#CF142B',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Estilos personalizados y reglas de impresión */
+    body {
+      background: linear-gradient(135deg, #eff6ff 0%, #fefce8 50%, #f0fdf4 100%);
+      color: #0f172a;
+      overflow-x: hidden;
+    }
+
+    /* Fondo ambiental dinámico con cuadrícula escolar sutil */
+    .workspace-pattern {
+      background-color: #e0e7ff;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(254, 240, 138, 0.45) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(191, 219, 254, 0.55) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(254, 202, 202, 0.4) 0px, transparent 50%),
+        linear-gradient(to right, rgba(99, 102, 241, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+    }
+
+    /* Textura cálida de Cartulina / Papel Bond Escolar */
+    .papel-bond-bg {
+      background-color: #fffdf5;
+      background-image: 
+        radial-gradient(circle at top right, rgba(254, 240, 138, 0.35), transparent 40%),
+        radial-gradient(circle at bottom left, rgba(186, 230, 253, 0.35), transparent 40%),
+        linear-gradient(to right, rgba(245, 158, 11, 0.14) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(245, 158, 11, 0.14) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 22px 22px, 22px 22px;
+    }
+
+    /* Cinta adhesiva decorativa (Washi Tape) para las esquinas de los bloques */
+    .washi-tape {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      width: 72px;
+      height: 18px;
+      opacity: 0.85;
+      border-radius: 2px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+      pointer-events: none;
+    }
+
+    /* Borde decorativo estilo marcador escolar vibrante */
+    .borde-marcador {
+      border: 3px solid currentColor;
+      box-shadow: 5px 5px 0px rgba(15, 23, 42, 0.14);
+    }
+
+    /* Edición en vivo visual */
+    [contenteditable="true"]:hover {
+      outline: 2px dashed #2563eb;
+      outline-offset: 3px;
+      border-radius: 6px;
+      cursor: text;
+    }
+    [contenteditable="true"]:focus {
+      outline: 2px solid #1d4ed8;
+      outline-offset: 3px;
+      background-color: rgba(255, 255, 255, 0.92);
+      border-radius: 6px;
+    }
+
+    /* Scrollbar limpio */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #e2e8f0;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+
+    /* Animaciones suaves */
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.98) translateY(6px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-lamina {
+      animation: fadeInScale 0.35s ease-out forwards;
+    }
+
+    /* Modo Pantalla Completa */
+    .fullscreen-overlay {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 9999 !important;
+      background: #0f172a !important;
+      display: flex !important;
+      flex-direction: column !important;
+      padding: 1rem !important;
+    }
+
+    /* Reglas estrictas para Impresión / Guardar como PDF conservando colores */
+    @media print {
+      @page {
+        size: landscape;
+        margin: 0.35cm;
+      }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      body * {
+        visibility: hidden;
+      }
+      #print-area, #print-area * {
+        visibility: visible;
+      }
+      #print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .lamina-page-break {
+        page-break-after: always;
+        break-after: page;
+        box-shadow: none !important;
+        margin-bottom: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Toast / Notificación flotante (Reemplazo elegante de alert) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Barra Superior Institucional con acento tricolor vibrante -->
+  <header class="bg-gradient-to-r from-slate-950 via-[#001d66] to-slate-900 text-white border-b-2 border-amber-400 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-lg no-print">
+    <div class="flex items-center gap-3">
+      <!-- Emblema Tricolor Estilizado -->
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-ve-amarillo via-ve-azul to-ve-rojo p-0.5 shadow-lg flex items-center justify-center">
+        <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+          <i data-lucide="presentation" class="w-5 h-5 text-amber-400"></i>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-extrabold text-lg tracking-tight text-white">LáminaPro <span class="text-amber-400">VE</span></h1>
+          <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40">
+            Currículo Nacional
+          </span>
+        </div>
+        <p class="text-xs text-blue-200 hidden sm:block">Generador Inteligente de Láminas Expositivas • Primaria, Media y Universidad</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button onclick="cargarEjemploRapido()" class="text-xs sm:text-sm bg-white/10 hover:bg-white/20 text-amber-200 px-3 py-2 rounded-lg border border-white/15 transition flex items-center gap-1.5 backdrop-blur-xs" title="Cargar una lámina de demostración instantánea">
+        <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+        <span class="hidden md:inline">Ver Ejemplo</span>
+      </button>
+      <button onclick="abrirModalGuia()" class="text-xs sm:text-sm bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 px-3.5 py-2 rounded-lg font-extrabold transition flex items-center gap-1.5 shadow-md">
+        <i data-lucide="mic" class="w-4 h-4"></i>
+        <span>Guion de Exposición</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal (Panel Izquierdo + Lienzo Derecho) -->
+  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- PANEL LATERAL IZQUIERDO: CONFIGURACIÓN CURRICULAR CON TARJETAS TINTADAS -->
+    <aside class="w-full lg:w-[390px] xl:w-[420px] bg-gradient-to-b from-slate-50 via-blue-50/40 to-amber-50/30 border-r border-indigo-200/80 flex flex-col lg:h-[calc(100vh-65px)] overflow-y-auto no-print shadow-md z-20">
+      <div class="p-4 sm:p-5 space-y-4">
+        
+        <!-- Paso 1: Nivel Educativo -->
+        <div class="bg-white/90 p-3.5 rounded-2xl border border-blue-200/80 shadow-xs">
+          <label class="text-xs font-extrabold uppercase tracking-wider text-blue-950 flex items-center gap-2 mb-2.5">
+            <span class="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-slate-950 font-black inline-flex items-center justify-center text-[11px] shadow-xs">1</span>
+            Nivel Educativo Venezolano
+          </label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="seleccionarNivel('primaria')" id="btn-nivel-primaria" class="nivel-btn p-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-950 text-center transition flex flex-col items-center gap-1 shadow-xs">
+              <i data-lucide="backpack" class="w-5 h-5 text-blue-600"></i>
+              <span class="text-xs font-extrabold">Primaria</span>
+              <span class="text-[10px] font-medium text-blue-700/80">1° a 6° Grado</span>
+            </button>
+            <button type="button" onclick="seleccionarNivel('media')" id="btn-nivel-media" class="nivel-btn p-2.5 rounded-xl border-2 border-slate-200 hover:border-blue-300 bg-white text-slate-700 text-center transition flex flex-col items-center gap-1">
+              <i data-lucide="book-open" class="w-5 h-5 text-emerald-600"></i>
+              <span class="text-xs font-bold">Bachillerato</span>
+              <span class="text-[10px] text-slate-500">1° a 5° Año</span>
+            </button>
+            <button type="button" onclick="seleccionarNivel('universidad')" id="btn-nivel-universidad" class="nivel-btn p-2.5 rounded-xl border-2 border-slate-200 hover:border-blue-300 bg-white text-slate-700 text-center transition flex flex-col items-center gap-1">
+              <i data-lucide="graduation-cap" class="w-5 h-5 text-purple-600"></i>
+              <span class="text-xs font-bold">Universidad</span>
+              <span class="text-[10px] text-slate-500">Pregrado / TSU</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Paso 2: Grado/Año/Área y Materia -->
+        <div class="space-y-3 bg-gradient-to-br from-blue-50/90 to-indigo-50/80 p-3.5 rounded-2xl border border-blue-200 shadow-xs">
+          <label class="text-xs font-extrabold uppercase tracking-wider text-blue-950 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-blue-700 text-white font-bold inline-flex items-center justify-center text-[11px] shadow-xs">2</span>
+            <span id="label-subnivel">Grado y Área de Aprendizaje</span>
+          </label>
+
+          <!-- Selector Grado / Año / Área del Conocimiento -->
+          <div>
+            <label id="lbl-grado" class="block text-xs font-bold text-slate-700 mb-1">Selecciona el Grado:</label>
+            <select id="select-grado" onchange="actualizarMaterias()" class="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs">
+              <!-- Opciones dinámicas -->
+            </select>
+          </div>
+
+          <!-- Selector Universidad de referencia (Solo visible en nivel universidad) -->
+          <div id="box-universidad-ref" class="hidden">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Casa de Estudios (Referencia Académica):</label>
+            <select id="select-universidad" class="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none shadow-2xs">
+              <option value="General (Universidades Venezolanas)">General / Estándar Universitario VE</option>
+              <option value="UCV (Universidad Central de Venezuela)">UCV - Universidad Central de Venezuela</option>
+              <option value="USB (Universidad Simón Bolívar)">USB - Universidad Simón Bolívar</option>
+              <option value="UCAB (Universidad Católica Andrés Bello)">UCAB - Univ. Católica Andrés Bello</option>
+              <option value="LUZ (Universidad del Zulia)">LUZ - Universidad del Zulia</option>
+              <option value="ULA (Universidad de Los Andes)">ULA - Universidad de Los Andes</option>
+              <option value="UC (Universidad de Carabobo)">UC - Universidad de Carabobo</option>
+              <option value="UDO (Universidad de Oriente)">UDO - Universidad de Oriente</option>
+              <option value="UNEXPO (Univ. Nacional Experimental Politécnica)">UNEXPO - Politécnica Antonio José de Sucre</option>
+              <option value="UNEFA (Univ. Nacional Experimental de la Fuerza Armada)">UNEFA</option>
+              <option value="UPEL (Universidad Pedagógica Experimental Libertador)">UPEL - Pedagógico</option>
+              <option value="UNESR / UBV / IUT">UNESR / UBV / Institutos Tecnológicos</option>
+            </select>
+          </div>
+
+          <!-- Selector de Materia -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Materia / Asignatura:</label>
+            <select id="select-materia" onchange="actualizarSugerencias()" class="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs">
+              <!-- Opciones dinámicas -->
+            </select>
+          </div>
+
+          <!-- Campo opcional para materia personalizada -->
+          <div id="box-materia-custom" class="hidden">
+            <input type="text" id="input-materia-custom" placeholder="Escribe el nombre exacto de tu cátedra..." class="w-full rounded-xl border border-blue-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none" />
+          </div>
+        </div>
+
+        <!-- Paso 3: Tema de la Exposición -->
+        <div class="space-y-2.5 bg-gradient-to-br from-amber-50/90 to-yellow-50/70 p-3.5 rounded-2xl border border-amber-200 shadow-xs">
+          <label class="text-xs font-extrabold uppercase tracking-wider text-amber-950 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-amber-500 text-white font-bold inline-flex items-center justify-center text-[11px] shadow-xs">3</span>
+            Tema de la Exposición
+          </label>
+          <textarea id="input-tema" rows="2" placeholder="Ej: Los Símbolos Patrios de Venezuela, Leyes de Newton, La Constitución de 1999..." class="w-full rounded-xl border border-amber-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20 resize-none font-medium shadow-2xs"></textarea>
+          
+          <!-- Temas sugeridos dinámicos -->
+          <div>
+            <span class="text-[11px] font-bold text-amber-900/80 block mb-1.5">💡 Temas sugeridos del currículo venezolano:</span>
+            <div id="contenedor-sugerencias" class="flex flex-wrap gap-1.5">
+              <!-- Pills dinámicas -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 4: Estilo Visual y Cantidad de Láminas -->
+        <div class="space-y-3 bg-gradient-to-br from-emerald-50/80 to-teal-50/70 p-3.5 rounded-2xl border border-emerald-200 shadow-xs">
+          <label class="text-xs font-extrabold uppercase tracking-wider text-emerald-950 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-bold inline-flex items-center justify-center text-[11px] shadow-xs">4</span>
+            Diseño y Estructura Visual
+          </label>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Formato Visual de la Lámina:</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" onclick="seleccionarEstilo('bond')" id="estilo-bond" class="estilo-btn p-2.5 rounded-xl border-2 border-blue-600 bg-white text-left transition shadow-2xs">
+                <div class="flex items-center gap-1.5 font-extrabold text-xs text-blue-950">
+                  <i data-lucide="pen-tool" class="w-3.5 h-3.5 text-rose-500"></i> Papel Bond Escolar
+                </div>
+                <p class="text-[10px] text-slate-600 mt-0.5 leading-tight">Cartulina cálida, cintas de color y marcadores</p>
+              </button>
+
+              <button type="button" onclick="seleccionarEstilo('mental')" id="estilo-mental" class="estilo-btn p-2.5 rounded-xl border-2 border-emerald-200/80 bg-white/80 hover:border-emerald-400 text-left transition">
+                <div class="flex items-center gap-1.5 font-bold text-xs text-slate-800">
+                  <i data-lucide="network" class="w-3.5 h-3.5 text-emerald-600"></i> Mapa Mental
+                </div>
+                <p class="text-[10px] text-slate-500 mt-0.5 leading-tight">Nodo central luminoso y ramas multicolor</p>
+              </button>
+
+              <button type="button" onclick="seleccionarEstilo('infografia')" id="estilo-infografia" class="estilo-btn p-2.5 rounded-xl border-2 border-emerald-200/80 bg-white/80 hover:border-emerald-400 text-left transition">
+                <div class="flex items-center gap-1.5 font-bold text-xs text-slate-800">
+                  <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-amber-500"></i> Infografía Moderna
+                </div>
+                <p class="text-[10px] text-slate-500 mt-0.5 leading-tight">Bloques vibrantes, insignias y alto contraste</p>
+              </button>
+
+              <button type="button" onclick="seleccionarEstilo('academico')" id="estilo-academico" class="estilo-btn p-2.5 rounded-xl border-2 border-emerald-200/80 bg-white/80 hover:border-emerald-400 text-left transition">
+                <div class="flex items-center gap-1.5 font-bold text-xs text-slate-800">
+                  <i data-lucide="landmark" class="w-3.5 h-3.5 text-indigo-600"></i> Diapositiva Univ.
+                </div>
+                <p class="text-[10px] text-slate-500 mt-0.5 leading-tight">Elegante, institucional y con acentos de color</p>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Cantidad de Láminas:</label>
+              <select id="select-cantidad" class="w-full rounded-xl border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:border-emerald-600 focus:outline-none">
+                <option value="1">1 Lámina (Resumen Único)</option>
+                <option value="3" selected>3 Láminas (Inicio, Desarrollo, Cierre)</option>
+                <option value="4">4 Láminas (Exposición Completa)</option>
+                <option value="5">5 Láminas (Defensa Detallada)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del Expositor:</label>
+              <input type="text" id="input-autor" placeholder="Opcional (Ej: Sofía Pérez)" class="w-full rounded-xl border border-emerald-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-emerald-600 focus:outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón Principal de Generación -->
+        <button id="btn-generar" onclick="generarLaminasIA()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#00247D] via-blue-700 to-rose-600 hover:from-blue-800 hover:to-rose-500 text-white font-extrabold text-sm shadow-lg shadow-blue-900/25 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
+          <i data-lucide="wand-2" class="w-5 h-5 text-amber-300"></i>
+          <span>Generar Láminas con IA</span>
+        </button>
+
+      </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL DERECHA: BARRA DE HERRAMIENTAS Y LIENZO INTERACTIVO -->
+    <main id="workspace-main" class="flex-1 flex flex-col workspace-pattern lg:h-[calc(100vh-65px)] overflow-hidden">
+      
+      <!-- Barra de Personalización y Controles del Lienzo -->
+      <div class="bg-white/95 backdrop-blur-xs border-b border-indigo-200/80 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 no-print shadow-xs">
+        
+        <!-- Paletas de Color Vibrantes -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-extrabold text-slate-600 hidden sm:inline">Tema de Color:</span>
+          <div class="flex items-center gap-2" id="selector-paletas">
+            <button onclick="cambiarPaleta('tricolor')" id="pal-btn-tricolor" title="Tricolor Venezolano Vibrante" class="paleta-btn w-6 h-6 rounded-full bg-gradient-to-tr from-[#FFCC00] via-[#00247D] to-[#CF142B] ring-2 ring-offset-2 ring-blue-600 transition shadow-xs"></button>
+            <button onclick="cambiarPaleta('manzana')" id="pal-btn-manzana" title="Verde Manzana & Neón" class="paleta-btn w-6 h-6 rounded-full bg-gradient-to-tr from-lime-400 to-emerald-600 hover:scale-110 transition shadow-xs"></button>
+            <button onclick="cambiarPaleta('turquesa')" id="pal-btn-turquesa" title="Azul Rey & Turquesa" class="paleta-btn w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-400 to-blue-700 hover:scale-110 transition shadow-xs"></button>
+            <button onclick="cambiarPaleta('coral')" id="pal-btn-coral" title="Naranja Coral & Sol" class="paleta-btn w-6 h-6 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-rose-600 hover:scale-110 transition shadow-xs"></button>
+            <button onclick="cambiarPaleta('morado')" id="pal-btn-morado" title="Morado Creativo & Magenta" class="paleta-btn w-6 h-6 rounded-full bg-gradient-to-tr from-fuchsia-500 to-purple-800 hover:scale-110 transition shadow-xs"></button>
+            <button onclick="cambiarPaleta('esmeralda')" id="pal-btn-esmeralda" title="Esmeralda & Dorado Académico" class="paleta-btn w-6 h-6 rounded-full bg-gradient-to-tr from-emerald-800 to-teal-500 hover:scale-110 transition shadow-xs"></button>
+          </div>
+        </div>
+
+        <!-- Controles de Texto y Zoom -->
+        <div class="flex items-center gap-1.5 bg-indigo-50/80 p-1 rounded-xl border border-indigo-200/80">
+          <button onclick="cambiarTamanoFuente(-1)" class="p-1.5 hover:bg-white rounded-lg text-indigo-900 transition" title="Reducir letra">
+            <i data-lucide="a-arrow-down" class="w-4 h-4"></i>
+          </button>
+          <span id="indicador-fuente" class="text-[11px] font-extrabold text-indigo-950 px-1">100%</span>
+          <button onclick="cambiarTamanoFuente(1)" class="p-1.5 hover:bg-white rounded-lg text-indigo-900 transition" title="Aumentar letra">
+            <i data-lucide="a-arrow-up" class="w-4 h-4"></i>
+          </button>
+          <div class="w-px h-4 bg-indigo-200 mx-1"></div>
+          <span class="text-[11px] font-medium text-indigo-800 hidden md:inline px-1.5">✏️ Toca cualquier texto para editar</span>
+        </div>
+
+        <!-- Acciones: Pantalla Completa e Imprimir -->
+        <div class="flex items-center gap-2">
+          <button onclick="togglePantallaCompleta()" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-950 text-xs font-bold flex items-center gap-1.5 transition border border-indigo-200">
+            <i data-lucide="maximize-2" class="w-3.5 h-3.5 text-indigo-600"></i>
+            <span class="hidden sm:inline">Exponer</span>
+          </button>
+          <button onclick="imprimirLaminas()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-sm">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>Imprimir / PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenedor Scrollable de la Lámina -->
+      <div id="canvas-scroll-area" class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 flex flex-col items-center justify-start relative">
+        
+        <!-- Estado de Carga (Overlay animado) -->
+        <div id="loading-overlay" class="hidden absolute inset-0 bg-slate-900/60 backdrop-blur-xs z-30 flex flex-col items-center justify-center p-6 text-center">
+          <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border-2 border-amber-400 space-y-4">
+            <div class="w-14 h-14 mx-auto rounded-full bg-blue-50 flex items-center justify-center relative">
+              <div class="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+              <i data-lucide="sparkles" class="w-6 h-6 text-blue-700"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-base">Diseñando tus Láminas...</h3>
+              <p id="loading-mensaje" class="text-xs text-slate-500 mt-1">Adaptando el contenido al currículo venezolano y aplicando diseño a todo color.</p>
+            </div>
+            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div class="bg-gradient-to-r from-ve-amarillo via-ve-azul to-ve-rojo h-full w-2/3 animate-pulse rounded-full"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LIENZO DE RENDERIZADO DE LÁMINAS (Área Imprimible) -->
+        <div id="print-area" class="w-full max-w-5xl space-y-8">
+          <!-- Aquí se inyecta la lámina activa (o todas al imprimir) -->
+        </div>
+
+      </div>
+
+      <!-- Barra Inferior de Navegación entre Láminas -->
+      <div id="barra-navegacion" class="bg-white/95 backdrop-blur-xs border-t border-indigo-200/80 px-4 py-2.5 flex items-center justify-between no-print">
+        <button onclick="navegarLamina(-1)" id="btn-prev-lamina" class="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 disabled:opacity-40 text-indigo-950 text-xs font-extrabold flex items-center gap-1 transition border border-indigo-200">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i> Anterior
+        </button>
+
+        <div class="flex items-center gap-2" id="indicadores-paginas">
+          <!-- Puntos o botones de número de lámina -->
+        </div>
+
+        <button onclick="navegarLamina(1)" id="btn-next-lamina" class="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 disabled:opacity-40 text-indigo-950 text-xs font-extrabold flex items-center gap-1 transition border border-indigo-200">
+          Siguiente <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODAL: GUION DEL EXPOSITOR (QUÉ DECIR AL DEFENDER LA LÁMINA) -->
+  <div id="modal-guia" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-lamina">
+      <div class="bg-blue-950 text-white px-5 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 bg-amber-400/20 rounded-lg">
+            <i data-lucide="mic" class="w-5 h-5 text-amber-400"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base">Guía del Expositor (Apuntes de Defensa)</h3>
+            <p class="text-xs text-blue-200">Qué decir para explicar tu lámina con seguridad y sin leerla</p>
+          </div>
+        </div>
+        <button onclick="cerrarModalGuia()" class="p-1.5 hover:bg-white/10 rounded-lg transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <div id="contenido-guia-expositor" class="p-5 overflow-y-auto space-y-4 text-sm text-slate-700 leading-relaxed">
+        <!-- Contenido dinámico del guion -->
+      </div>
+
+      <div class="bg-slate-50 border-t border-slate-200 px-5 py-3 flex items-center justify-between">
+        <span class="text-xs text-slate-500">💡 Consejo: Mantén contacto visual y señala los bloques de tu lámina.</span>
+        <button onclick="copiarGuionCompleto()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 transition">
+          <i data-lucide="copy" class="w-4 h-4"></i> Copiar todo el guion
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROLES FLOTANTES EN MODO PANTALLA COMPLETA -->
+  <div id="controles-fullscreen" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-[10000] bg-slate-900/90 backdrop-blur-md text-white px-4 py-2.5 rounded-full border border-slate-700 shadow-2xl flex items-center gap-4">
+    <button onclick="navegarLamina(-1)" class="p-1.5 hover:bg-white/15 rounded-full transition"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+    <span id="fs-contador" class="text-xs font-bold tracking-wide">Lámina 1 de 3</span>
+    <button onclick="navegarLamina(1)" class="p-1.5 hover:bg-white/15 rounded-full transition"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+    <div class="w-px h-5 bg-slate-700"></div>
+    <button onclick="togglePantallaCompleta()" class="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1">
+      <i data-lucide="minimize-2" class="w-4 h-4"></i> Salir
+    </button>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 2. ESTADO GLOBAL DE LA APLICACIÓN Y PALETAS VIBRANTES
+    // =========================================================================
+    let estado = {
+      nivel: 'primaria',
+      grado: '4to Grado',
+      materia: 'Ciencias Sociales, Ciudadanía e Identidad',
+      estilo: 'bond', // 'bond' | 'mental' | 'infografia' | 'academico'
+      paleta: 'tricolor',
+      tamanoFuente: 100, // porcentaje
+      laminaActual: 0,
+      fullscreen: false,
+      datosPresentacion: null // Objeto JSON estructurado con las láminas
+    };
+
+    const PALETAS = {
+      tricolor: {
+        nombre: "Tricolor Venezolano Vibrante",
+        canvasBg: "bg-gradient-to-br from-amber-50 via-blue-50/80 to-rose-50/80",
+        headerBg: "bg-gradient-to-r from-[#00247D] via-blue-800 to-[#b91c1c]",
+        headerText: "text-white",
+        accentBorder: "border-[#00247D]",
+        accentBadge: "bg-[#FFCC00] text-slate-950",
+        ideaBg: "bg-gradient-to-r from-amber-100 via-yellow-50 to-amber-100 border-amber-400",
+        cardTints: [
+          "bg-blue-100/80 border-blue-600 text-blue-950",
+          "bg-amber-100/80 border-amber-500 text-amber-950",
+          "bg-rose-100/80 border-rose-600 text-rose-950",
+          "bg-sky-100/80 border-sky-600 text-sky-950"
+        ],
+        badgeColors: ["bg-[#00247D] text-white", "bg-amber-500 text-slate-950", "bg-[#CF142B] text-white", "bg-sky-600 text-white"],
+        tapeColors: ["bg-amber-400", "bg-blue-500", "bg-rose-500", "bg-emerald-400"],
+        visualBoxBg: "bg-gradient-to-br from-sky-100 via-indigo-50 to-amber-100 border-blue-500",
+        datoBoxBg: "bg-gradient-to-r from-[#00247D] to-blue-900 text-white border-amber-400",
+        titleColor: "text-[#00247D]",
+        subColor: "text-[#CF142B]",
+        ribbon: "from-[#FFCC00] via-[#00247D] to-[#CF142B]",
+        footerBg: "bg-gradient-to-r from-amber-100/90 via-blue-100/90 to-rose-100/90 text-slate-800 border-blue-200"
+      },
+      manzana: {
+        nombre: "Verde Manzana & Neón",
+        canvasBg: "bg-gradient-to-br from-lime-50 via-emerald-50/90 to-yellow-50/80",
+        headerBg: "bg-gradient-to-r from-emerald-700 via-green-600 to-lime-600",
+        headerText: "text-white",
+        accentBorder: "border-emerald-600",
+        accentBadge: "bg-lime-300 text-emerald-950",
+        ideaBg: "bg-gradient-to-r from-lime-200/80 via-emerald-100 to-teal-100 border-emerald-500",
+        cardTints: [
+          "bg-emerald-100/85 border-emerald-600 text-emerald-950",
+          "bg-lime-100/85 border-lime-600 text-lime-950",
+          "bg-teal-100/85 border-teal-600 text-teal-950",
+          "bg-yellow-100/85 border-amber-500 text-amber-950"
+        ],
+        badgeColors: ["bg-emerald-700 text-white", "bg-lime-500 text-slate-950", "bg-teal-700 text-white", "bg-amber-500 text-slate-950"],
+        tapeColors: ["bg-lime-400", "bg-emerald-400", "bg-amber-400", "bg-teal-400"],
+        visualBoxBg: "bg-gradient-to-br from-lime-100 via-emerald-50 to-teal-100 border-emerald-500",
+        datoBoxBg: "bg-gradient-to-r from-emerald-800 to-teal-800 text-white border-lime-400",
+        titleColor: "text-emerald-900",
+        subColor: "text-lime-700",
+        ribbon: "from-lime-400 via-emerald-500 to-teal-600",
+        footerBg: "bg-gradient-to-r from-lime-100 via-emerald-100 to-teal-100 text-emerald-950 border-emerald-200"
+      },
+      turquesa: {
+        nombre: "Azul Rey & Turquesa",
+        canvasBg: "bg-gradient-to-br from-cyan-50 via-sky-100/70 to-indigo-100/70",
+        headerBg: "bg-gradient-to-r from-blue-900 via-sky-700 to-cyan-600",
+        headerText: "text-white",
+        accentBorder: "border-sky-600",
+        accentBadge: "bg-cyan-300 text-blue-950",
+        ideaBg: "bg-gradient-to-r from-cyan-100 via-sky-100 to-blue-100 border-sky-500",
+        cardTints: [
+          "bg-sky-100/85 border-sky-600 text-sky-950",
+          "bg-cyan-100/85 border-cyan-600 text-cyan-950",
+          "bg-indigo-100/85 border-indigo-600 text-indigo-950",
+          "bg-teal-100/85 border-teal-600 text-teal-950"
+        ],
+        badgeColors: ["bg-blue-800 text-white", "bg-cyan-500 text-slate-950", "bg-indigo-700 text-white", "bg-sky-600 text-white"],
+        tapeColors: ["bg-cyan-400", "bg-sky-400", "bg-indigo-400", "bg-amber-300"],
+        visualBoxBg: "bg-gradient-to-br from-cyan-100 via-sky-50 to-indigo-100 border-sky-500",
+        datoBoxBg: "bg-gradient-to-r from-blue-950 to-cyan-900 text-white border-cyan-400",
+        titleColor: "text-blue-900",
+        subColor: "text-cyan-700",
+        ribbon: "from-cyan-400 via-sky-500 to-blue-800",
+        footerBg: "bg-gradient-to-r from-cyan-100 via-sky-100 to-indigo-100 text-blue-950 border-sky-200"
+      },
+      coral: {
+        nombre: "Naranja Coral & Sol",
+        canvasBg: "bg-gradient-to-br from-orange-50 via-amber-50/90 to-rose-100/70",
+        headerBg: "bg-gradient-to-r from-rose-700 via-orange-600 to-amber-500",
+        headerText: "text-white",
+        accentBorder: "border-orange-600",
+        accentBadge: "bg-yellow-300 text-rose-950",
+        ideaBg: "bg-gradient-to-r from-amber-100 via-orange-100 to-rose-100 border-orange-500",
+        cardTints: [
+          "bg-orange-100/85 border-orange-600 text-orange-950",
+          "bg-rose-100/85 border-rose-600 text-rose-950",
+          "bg-amber-100/85 border-amber-600 text-amber-950",
+          "bg-red-100/85 border-red-500 text-red-950"
+        ],
+        badgeColors: ["bg-orange-600 text-white", "bg-rose-600 text-white", "bg-amber-500 text-slate-950", "bg-red-600 text-white"],
+        tapeColors: ["bg-amber-400", "bg-rose-400", "bg-orange-400", "bg-yellow-400"],
+        visualBoxBg: "bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100 border-orange-500",
+        datoBoxBg: "bg-gradient-to-r from-rose-900 to-orange-800 text-white border-amber-400",
+        titleColor: "text-rose-900",
+        subColor: "text-orange-700",
+        ribbon: "from-yellow-400 via-orange-500 to-rose-600",
+        footerBg: "bg-gradient-to-r from-amber-100 via-orange-100 to-rose-100 text-rose-950 border-orange-200"
+      },
+      morado: {
+        nombre: "Morado Creativo & Magenta",
+        canvasBg: "bg-gradient-to-br from-fuchsia-50 via-purple-50/90 to-indigo-100/70",
+        headerBg: "bg-gradient-to-r from-purple-900 via-fuchsia-700 to-pink-600",
+        headerText: "text-white",
+        accentBorder: "border-purple-700",
+        accentBadge: "bg-pink-300 text-purple-950",
+        ideaBg: "bg-gradient-to-r from-purple-100 via-fuchsia-100 to-pink-100 border-fuchsia-500",
+        cardTints: [
+          "bg-purple-100/85 border-purple-600 text-purple-950",
+          "bg-fuchsia-100/85 border-fuchsia-600 text-fuchsia-950",
+          "bg-pink-100/85 border-pink-600 text-pink-950",
+          "bg-indigo-100/85 border-indigo-600 text-indigo-950"
+        ],
+        badgeColors: ["bg-purple-700 text-white", "bg-fuchsia-600 text-white", "bg-pink-600 text-white", "bg-indigo-700 text-white"],
+        tapeColors: ["bg-pink-400", "bg-purple-400", "bg-fuchsia-400", "bg-amber-300"],
+        visualBoxBg: "bg-gradient-to-br from-fuchsia-100 via-purple-50 to-pink-100 border-purple-500",
+        datoBoxBg: "bg-gradient-to-r from-purple-950 to-fuchsia-900 text-white border-pink-400",
+        titleColor: "text-purple-900",
+        subColor: "text-fuchsia-700",
+        ribbon: "from-pink-400 via-fuchsia-500 to-purple-800",
+        footerBg: "bg-gradient-to-r from-purple-100 via-fuchsia-100 to-pink-100 text-purple-950 border-purple-200"
+      },
+      esmeralda: {
+        nombre: "Esmeralda & Dorado Académico",
+        canvasBg: "bg-gradient-to-br from-emerald-50 via-teal-50/90 to-amber-50/70",
+        headerBg: "bg-gradient-to-r from-emerald-950 via-emerald-800 to-teal-800",
+        headerText: "text-white",
+        accentBorder: "border-emerald-800",
+        accentBadge: "bg-amber-300 text-emerald-950",
+        ideaBg: "bg-gradient-to-r from-emerald-100 via-teal-50 to-amber-100/80 border-emerald-600",
+        cardTints: [
+          "bg-emerald-100/80 border-emerald-700 text-emerald-950",
+          "bg-teal-100/80 border-teal-700 text-teal-950",
+          "bg-amber-100/80 border-amber-600 text-amber-950",
+          "bg-cyan-100/80 border-cyan-700 text-cyan-950"
+        ],
+        badgeColors: ["bg-emerald-800 text-white", "bg-teal-700 text-white", "bg-amber-500 text-slate-950", "bg-emerald-700 text-white"],
+        tapeColors: ["bg-amber-400", "bg-emerald-500", "bg-teal-500", "bg-lime-400"],
+        visualBoxBg: "bg-gradient-to-br from-emerald-100 via-teal-50 to-amber-100 border-emerald-600",
+        datoBoxBg: "bg-gradient-to-r from-emerald-950 to-teal-900 text-white border-amber-400",
+        titleColor: "text-emerald-950",
+        subColor: "text-teal-800",
+        ribbon: "from-amber-400 via-emerald-600 to-teal-800",
+        footerBg: "bg-gradient-to-r from-emerald-100 via-teal-100 to-amber-100 text-emerald-950 border-emerald-300"
+      }
+    };
+
+    // =========================================================================
+    // 2. ESTADO GLOBAL DE LA APLICACIÓN
+    // =========================================================================
+    let estado = {
+      nivel: 'primaria',
+      grado: '4to Grado',
+      materia: 'Ciencias Sociales, Ciudadanía e Identidad',
+      estilo: 'bond', // 'bond' | 'mental' | 'infografia' | 'academico'
+      paleta: 'tricolor', // 'tricolor' | 'esmeralda' | 'terracota' | 'pizarra' | 'bond'
+      tamanoFuente: 100, // porcentaje
+      laminaActual: 0,
+      fullscreen: false,
+      datosPresentacion: null // Objeto JSON estructurado con las láminas
+    };
+
+    const PALETAS = {
+      tricolor: {
+        nombre: "Azul Tricolor VE",
+        headerBg: "bg-gradient-to-r from-[#00247D] via-blue-900 to-[#001854]",
+        headerText: "text-white",
+        accentBorder: "border-[#00247D]",
+        accentBadge: "bg-[#FFCC00] text-slate-950",
+        cardBg: "bg-blue-50/70",
+        cardBorder: "border-blue-200",
+        titleColor: "text-[#00247D]",
+        subColor: "text-[#CF142B]",
+        ribbon: "from-[#FFCC00] via-[#00247D] to-[#CF142B]"
+      },
+      esmeralda: {
+        nombre: "Esmeralda Académico",
+        headerBg: "bg-gradient-to-r from-emerald-900 to-teal-800",
+        headerText: "text-white",
+        accentBorder: "border-emerald-700",
+        accentBadge: "bg-amber-300 text-emerald-950",
+        cardBg: "bg-emerald-50/70",
+        cardBorder: "border-emerald-200",
+        titleColor: "text-emerald-900",
+        subColor: "text-teal-700",
+        ribbon: "from-emerald-400 via-teal-600 to-emerald-900"
+      },
+      terracota: {
+        nombre: "Terracota Creativo",
+        headerBg: "bg-gradient-to-r from-rose-900 via-red-800 to-amber-900",
+        headerText: "text-white",
+        accentBorder: "border-rose-700",
+        accentBadge: "bg-amber-200 text-rose-950",
+        cardBg: "bg-rose-50/60",
+        cardBorder: "border-rose-200",
+        titleColor: "text-rose-900",
+        subColor: "text-amber-700",
+        ribbon: "from-amber-400 via-orange-600 to-rose-800"
+      },
+      pizarra: {
+        nombre: "Pizarra Oscura",
+        headerBg: "bg-slate-900",
+        headerText: "text-amber-300",
+        accentBorder: "border-slate-800",
+        accentBadge: "bg-amber-400 text-slate-950",
+        cardBg: "bg-slate-100",
+        cardBorder: "border-slate-300",
+        titleColor: "text-slate-900",
+        subColor: "text-blue-700",
+        ribbon: "from-slate-600 via-slate-800 to-black"
+      },
+      bond: {
+        nombre: "Papel Bond Blanco",
+        headerBg: "bg-white border-b-4 border-slate-900",
+        headerText: "text-slate-900",
+        accentBorder: "border-slate-800",
+        accentBadge: "bg-slate-900 text-white",
+        cardBg: "bg-white",
+        cardBorder: "border-slate-400",
+        titleColor: "text-slate-900",
+        subColor: "text-slate-700",
+        ribbon: "from-slate-800 via-slate-500 to-slate-800"
+      }
+    };
+
+    // =========================================================================
+    // 3. INICIALIZACIÓN Y GESTIÓN DE FORMULARIO CURRICULAR
+    // =========================================================================
+    window.onload = function() {
+      lucide.createIcons();
+      seleccionarNivel('primaria');
+      cargarEjemploRapido(false);
+    };
+
+    function seleccionarNivel(nivel) {
+      estado.nivel = nivel;
+      
+      // Actualizar estilos visuales de botones de nivel
+      document.querySelectorAll('.nivel-btn').forEach(btn => {
+        btn.classList.remove('border-blue-600', 'bg-blue-50', 'text-blue-900');
+        btn.classList.add('border-slate-200', 'bg-white', 'text-slate-700');
+      });
+      const activeBtn = document.getElementById(`btn-nivel-${nivel}`);
+      activeBtn.classList.remove('border-slate-200', 'bg-white', 'text-slate-700');
+      activeBtn.classList.add('border-blue-600', 'bg-blue-50', 'text-blue-900');
+
+      // Etiquetas dinámicas
+      const config = CURRICULO_VE[nivel];
+      document.getElementById('label-subnivel').textContent = config.labelSubnivel;
+      document.getElementById('lbl-grado').textContent = config.labelGrado;
+
+      // Mostrar/ocultar selector de universidad
+      const boxUni = document.getElementById('box-universidad-ref');
+      if (nivel === 'universidad') {
+        boxUni.classList.remove('hidden');
+        seleccionarEstilo('academico');
+      } else {
+        boxUni.classList.add('hidden');
+        if (nivel === 'primaria') seleccionarEstilo('bond');
+        if (nivel === 'media') seleccionarEstilo('infografia');
+      }
+
+      // Poblar selector de Grados / Años / Áreas
+      const selectGrado = document.getElementById('select-grado');
+      selectGrado.innerHTML = config.grados.map(g => `<option value="${g}">${g}</option>`).join('');
+      if (nivel === 'primaria') selectGrado.value = "4to Grado";
+
+      actualizarMaterias();
+    }
+
+    function actualizarMaterias() {
+      const nivel = estado.nivel;
+      const gradoSeleccionado = document.getElementById('select-grado').value;
+      estado.grado = gradoSeleccionado;
+
+      const selectMateria = document.getElementById('select-materia');
+      const materiasObj = CURRICULO_VE[nivel].materias;
+
+      if (nivel === 'universidad') {
+        // En universidad, las materias dependen del Área del Conocimiento seleccionada
+        const listaMaterias = materiasObj[gradoSeleccionado] || [];
+        selectMateria.innerHTML = listaMaterias.map(m => `<option value="${m}">${m}</option>`).join('');
+      } else {
+        // En primaria y media, las áreas son las claves
+        const areas = Object.keys(materiasObj);
+        selectMateria.innerHTML = areas.map(a => `<option value="${a}">${a}</option>`).join('');
+        if (nivel === 'primaria') selectMateria.value = "Ciencias Sociales, Ciudadanía e Identidad";
+      }
+
+      actualizarSugerencias();
+    }
+
+    function actualizarSugerencias() {
+      const nivel = estado.nivel;
+      const grado = document.getElementById('select-grado').value;
+      const materia = document.getElementById('select-materia').value;
+      estado.materia = materia;
+
+      // Mostrar input si elige materia personalizada en universidad
+      const boxCustom = document.getElementById('box-materia-custom');
+      if (materia.includes("Personalizada")) {
+        boxCustom.classList.remove('hidden');
+      } else {
+        boxCustom.classList.add('hidden');
+      }
+
+      // Obtener temas sugeridos
+      let temas = [];
+      if (nivel === 'universidad') {
+        const lista = CURRICULO_VE.universidad.materias[grado] || [];
+        temas = lista.filter(t => !t.includes("Personalizada"));
+      } else {
+        temas = CURRICULO_VE[nivel].materias[materia] || [];
+      }
+
+      const contenedor = document.getElementById('contenedor-sugerencias');
+      contenedor.innerHTML = temas.slice(0, 5).map(tema => `
+        <button type="button" onclick="usarTemaSugerido('${tema.replace(/'/g, "\\'")}')" 
+          class="text-[11px] font-semibold bg-white hover:bg-amber-100 text-amber-950 border border-amber-300 px-2.5 py-1 rounded-full transition text-left truncate max-w-full shadow-2xs">
+          + ${tema}
+        </button>
+      `).join('');
+    }
+
+    function usarTemaSugerido(tema) {
+      document.getElementById('input-tema').value = tema;
+      mostrarToast("Tema seleccionado. ¡Listo para generar!");
+    }
+
+    function seleccionarEstilo(estilo) {
+      estado.estilo = estilo;
+      document.querySelectorAll('.estilo-btn').forEach(btn => {
+        btn.classList.remove('border-blue-600', 'bg-blue-50');
+        btn.classList.add('border-slate-200', 'bg-white');
+      });
+      const active = document.getElementById(`estilo-${estilo}`);
+      if (active) {
+        active.classList.remove('border-slate-200', 'bg-white');
+        active.classList.add('border-blue-600', 'bg-blue-50');
+      }
+      if (estado.datosPresentacion) {
+        renderizarLaminas();
+      }
+    }
+
+    // =========================================================================
+    // 4. INTEGRACIÓN CON GEMINI API (GENERACIÓN ESTRUCTURADA PEDAGÓGICA)
+    // =========================================================================
+    async function generarLaminasIA() {
+      const tema = document.getElementById('input-tema').value.trim();
+      if (!tema) {
+        mostrarToast("Por favor, escribe o selecciona un tema para la exposición.", "error");
+        document.getElementById('input-tema').focus();
+        return;
+      }
+
+      const nivel = estado.nivel;
+      const grado = document.getElementById('select-grado').value;
+      let materia = document.getElementById('select-materia').value;
+      if (materia.includes("Personalizada")) {
+        const custom = document.getElementById('input-materia-custom').value.trim();
+        if (custom) materia = custom;
+      }
+      const universidad = nivel === 'universidad' ? document.getElementById('select-universidad').value : '';
+      const cantidad = parseInt(document.getElementById('select-cantidad').value, 10);
+      const autor = document.getElementById('input-autor').value.trim();
+
+      // Mostrar pantalla de carga
+      const loader = document.getElementById('loading-overlay');
+      const btnGenerar = document.getElementById('btn-generar');
+      loader.classList.remove('hidden');
+      btnGenerar.disabled = true;
+
+      const nivelDescripcion = {
+        primaria: `Educación Primaria en Venezuela (${grado}). Usa lenguaje claro, cercano, didáctico, motivador y adaptado a niños de esa edad. Incluye sugerencias de dibujos o recortes fáciles.`,
+        media: `Educación Media General / Bachillerato en Venezuela (${grado}). Usa vocabulario académico intermedio, bien estructurado, analítico y alineado con los libros de la Colección Bicentenario / MPPE.`,
+        universidad: `Educación Universitaria en Venezuela (${grado} - ${universidad}). Usa rigor científico y técnico de nivel superior, terminología especializada, marco conceptual, análisis crítico y referencias teóricas relevantes.`
+      }[nivel];
+
+      const systemPrompt = `Eres un experto diseñador instruccional y pedagogo venezolano especializado en todos los niveles del sistema educativo de Venezuela (MPPE y MPPESU).
+Tu tarea es generar el contenido exacto, bien sintetizado y visualmente impactante para una serie de LÁMINAS EXPOSITIVAS.
+REGLAS CLAVE:
+1. Adapta el tono y profundidad estrictamente a: ${nivelDescripcion}
+2. Contextualiza siempre con ejemplos, datos, leyes, geografía o cultura de Venezuela cuando sea pertinente al tema.
+3. En una lámina expositiva NO debe haber párrafos largos y aburridos; usa títulos llamativos, ideas fuerza sintetizadas, viñetas claras, datos clave y sugerencias visuales (qué dibujar, qué gráfico colocar o qué recorte pegar).
+4. Genera también un "guionExpositor" por cada lámina para que el estudiante sepa qué decir oralmente al defender su lámina sin leerla.`;
+
+      const userQuery = `Genera exactamente ${cantidad} lámina(s) expositiva(s) sobre el tema: "${tema}".
+Materia/Área: "${materia}" (${grado}${universidad ? ' - ' + universidad : ''}).
+Estilo visual solicitado: ${estado.estilo}.`;
+
+      const payload = {
+        contents: [{ parts: [{ text: userQuery }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              tituloGeneral: { type: "STRING", description: "Título principal llamativo de la exposición" },
+              subtituloInstitucional: { type: "STRING", description: "Subtítulo con materia, nivel y contexto venezolano" },
+              laminas: {
+                type: "ARRAY",
+                description: "Lista secuencial de láminas",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    numero: { type: "INTEGER" },
+                    encabezado: { type: "STRING", description: "Título corto y potente de esta lámina" },
+                    etiquetaSeccion: { type: "STRING", description: "Ej: Introducción, Desarrollo Teórico, Caso Venezuela, Conclusiones" },
+                    ideaCentral: { type: "STRING", description: "Concepto central o tesis principal en 1 o 2 oraciones claras" },
+                    bloques: {
+                      type: "ARRAY",
+                      description: "3 a 4 bloques temáticos organizados para distribuir en la lámina",
+                      items: {
+                        type: "OBJECT",
+                        properties: {
+                          tituloBloque: { type: "STRING" },
+                          puntos: {
+                            type: "ARRAY",
+                            items: { type: "STRING" },
+                            description: "2 a 4 viñetas concisas y fáciles de leer a distancia"
+                          }
+                        },
+                        required: ["tituloBloque", "puntos"]
+                      }
+                    },
+                    datoDestacadoVE: { type: "STRING", description: "Un dato curioso, ejemplo aplicado a Venezuela, fórmula clave o cita académica" },
+                    sugerenciaVisual: { type: "STRING", description: "Descripción de qué dibujo, esquema, mapa o imagen colocar en el recuadro visual de la lámina" },
+                    guionExpositor: { type: "STRING", description: "Explicación oral natural (3 a 5 líneas) de cómo el estudiante debe explicar esta lámina al público o jurado" }
+                  },
+                  required: ["numero", "encabezado", "etiquetaSeccion", "ideaCentral", "bloques", "datoDestacadoVE", "sugerenciaVisual", "guionExpositor"]
+                }
+              }
+            },
+            required: ["tituloGeneral", "subtituloInstitucional", "laminas"]
+          }
+        }
+      };
+
+      try {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const response = await fetchWithBackoff(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!jsonText) {
+          throw new Error("No se recibió una respuesta válida del modelo.");
+        }
+
+        const data = JSON.parse(jsonText);
+        data.autor = autor;
+        data.grado = grado;
+        data.materia = materia;
+        data.universidad = universidad;
+
+        estado.datosPresentacion = data;
+        estado.laminaActual = 0;
+
+        renderizarLaminas();
+        actualizarModalGuion();
+        mostrarToast(`¡Se generaron ${data.laminas.length} lámina(s) listas para exponer!`);
+
+      } catch (error) {
+        console.error("Error generando láminas:", error);
+        mostrarToast("Hubo un inconveniente al conectar con la IA. Intenta de nuevo.", "error");
+      } finally {
+        loader.classList.add('hidden');
+        btnGenerar.disabled = false;
+      }
+    }
+
+    // Reintento con backoff exponencial (sin loguear reintentos como errores)
+    async function fetchWithBackoff(url, options, maxRetries = 4) {
+      let delay = 1000;
+      for (let i = 0; i < maxRetries; i++) {
+        const res = await fetch(url, options);
+        if (res.ok) return res;
+        if (res.status === 429 || res.status >= 500) {
+          await new Promise(r => setTimeout(r, delay));
+          delay *= 2;
+        } else {
+          return res;
+        }
+      }
+      throw new Error("Se agotaron los reintentos de conexión.");
+    }
+
+    // =========================================================================
+    // 5. RENDERIZADO VISUAL DE LAS LÁMINAS (4 ESTILOS + EDICIÓN EN VIVO)
+    // =========================================================================
+    function renderizarLaminas() {
+      const container = document.getElementById('print-area');
+      const data = estado.datosPresentacion;
+      if (!data || !data.laminas || data.laminas.length === 0) return;
+
+      const pal = PALETAS[estado.paleta] || PALETAS.tricolor;
+      const escala = estado.tamanoFuente / 100;
+
+      // Renderizamos todas las láminas en el DOM, pero en pantalla mostramos la activa
+      // y al imprimir (@media print) se muestran todas con salto de página.
+      container.innerHTML = data.laminas.map((lamina, idx) => {
+        const esActiva = idx === estado.laminaActual;
+        const claseVisibilidad = esActiva ? 'block' : 'hidden print:block';
+        const fondoLienzo = estado.estilo === 'bond' ? 'papel-bond-bg' : pal.canvasBg;
+
+        return `
+          <article id="lamina-card-${idx}" 
+            style="font-size: ${escala}rem;"
+            class="${claseVisibilidad} lamina-page-break animate-lamina rounded-3xl shadow-2xl overflow-hidden border-[3px] ${pal.accentBorder} ${fondoLienzo} transition-all">
+            
+            <!-- Cinta Tricolor / Decorativa Superior -->
+            <div class="h-2.5 w-full bg-gradient-to-r ${pal.ribbon}"></div>
+
+            <!-- Cabecera de la Lámina -->
+            <header class="${pal.headerBg} ${pal.headerText} px-6 py-4 sm:px-8 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+              <div class="space-y-1.5 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-3 py-0.5 rounded-full text-[0.72em] font-black uppercase tracking-wider shadow-xs ${pal.accentBadge}">
+                    Lámina ${idx + 1}/${data.laminas.length} • ${lamina.etiquetaSeccion}
+                  </span>
+                  <span class="px-2.5 py-0.5 rounded-full bg-white/15 text-[0.75em] font-semibold backdrop-blur-xs">
+                    ${data.grado} • ${data.materia}
+                  </span>
+                </div>
+                <h2 contenteditable="true" onblur="actualizarCampo(${idx}, 'encabezado', this.innerText)"
+                  class="${estado.estilo === 'bond' ? 'font-escolar' : estado.estilo === 'academico' ? 'font-academico' : 'font-sans'} text-[1.55em] sm:text-[1.9em] font-extrabold leading-tight tracking-tight drop-shadow-xs">
+                  ${lamina.encabezado}
+                </h2>
+              </div>
+
+              ${data.autor ? `
+                <div class="text-right shrink-0 bg-black/25 backdrop-blur-xs px-3.5 py-2 rounded-xl border border-white/25 shadow-xs">
+                  <span class="block text-[0.65em] uppercase tracking-wider opacity-85 font-bold">Expositor(a)</span>
+                  <span contenteditable="true" class="text-[0.88em] font-extrabold">${data.autor}</span>
+                </div>
+              ` : ''}
+            </header>
+
+            <!-- Cuerpo Adaptado al Estilo Visual Seleccionado -->
+            <div class="p-6 sm:p-8 space-y-6">
+              ${renderizarCuerpoPorEstilo(lamina, idx, pal)}
+            </div>
+
+            <!-- Pie de Lámina Colorido -->
+            <footer class="${pal.footerBg} border-t-2 px-6 py-2.5 flex flex-wrap items-center justify-between text-[0.74em] font-bold">
+              <span>🇻🇪 ${data.tituloGeneral} ${data.universidad ? '• ' + data.universidad : ''}</span>
+              <span class="opacity-85">LáminaPro VE • Material de Apoyo Expositivo</span>
+            </footer>
+          </article>
+        `;
+      }).join('');
+
+      actualizarControlesNavegacion();
+      lucide.createIcons();
+    }
+
+    function renderizarCuerpoPorEstilo(lamina, idx, pal) {
+      const estilo = estado.estilo;
+
+      // -----------------------------------------------------------------------
+      // ESTILO A: PAPEL BOND ESCOLAR (Cartulina cálida, cintas washi tape y tarjetas pastel)
+      // -----------------------------------------------------------------------
+      if (estilo === 'bond') {
+        return `
+          <!-- Idea Central tipo Cartel Destacado -->
+          <div class="p-4 sm:p-5 rounded-2xl border-2 border-dashed ${pal.ideaBg} shadow-sm relative">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="w-7 h-7 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-sm shadow-xs">📌</span>
+              <span class="font-escolar text-[0.9em] uppercase tracking-wide font-bold ${pal.titleColor}">Idea Principal de la Exposición:</span>
+            </div>
+            <p contenteditable="true" onblur="actualizarCampo(${idx}, 'ideaCentral', this.innerText)"
+              class="font-mano text-[1.28em] text-slate-900 leading-snug">
+              ${lamina.ideaCentral}
+            </p>
+          </div>
+
+          <!-- Grid de Bloques con Cintas Adhesivas de Color + Espacio para Dibujo/Recorte -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start pt-1">
+            <div class="md:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-5">
+              ${lamina.bloques.map((b, bIdx) => {
+                const tintClass = pal.cardTints[bIdx % pal.cardTints.length];
+                const badgeClass = pal.badgeColors[bIdx % pal.badgeColors.length];
+                const tapeClass = pal.tapeColors[bIdx % pal.tapeColors.length];
+                return `
+                  <div class="p-4 pt-5 rounded-2xl borde-marcador ${tintClass} relative">
+                    <div class="washi-tape ${tapeClass}"></div>
+                    <h3 contenteditable="true" onblur="actualizarBloqueTitulo(${idx}, ${bIdx}, this.innerText)"
+                      class="font-escolar text-[1.08em] font-bold mb-2.5 pb-1.5 border-b-2 border-current flex items-center gap-2">
+                      <span class="w-6 h-6 rounded-full ${badgeClass} text-[0.75em] inline-flex items-center justify-center shrink-0 shadow-2xs">${bIdx + 1}</span>
+                      <span>${b.tituloBloque}</span>
+                    </h3>
+                    <ul class="space-y-2 font-mano text-[1.15em] text-slate-900">
+                      ${b.puntos.map((p, pIdx) => `
+                        <li class="flex items-start gap-2 bg-white/65 px-2.5 py-1.5 rounded-xl border border-black/5">
+                          <span class="text-amber-500 font-bold shrink-0">★</span>
+                          <span contenteditable="true" onblur="actualizarPunto(${idx}, ${bIdx}, ${pIdx}, this.innerText)">${p}</span>
+                        </li>
+                      `).join('')}
+                    </ul>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+
+            <!-- Recuadro de Dibujo / Recorte Escolar Ilustrado + Dato VE -->
+            <div class="md:col-span-4 space-y-5">
+              <div class="border-[3px] border-dashed ${pal.visualBoxBg} rounded-2xl p-4 text-center flex flex-col items-center justify-center min-h-[200px] shadow-sm relative">
+                <div class="washi-tape bg-rose-400"></div>
+                <div class="w-12 h-12 rounded-2xl bg-white text-blue-700 flex items-center justify-center mb-2 shadow-sm border border-blue-200">
+                  <i data-lucide="palette" class="w-6 h-6"></i>
+                </div>
+                <span class="font-escolar text-[0.82em] uppercase tracking-wider text-blue-950 font-bold bg-white/80 px-2.5 py-0.5 rounded-full">
+                  🎨 Espacio para Dibujo o Recorte
+                </span>
+                <p contenteditable="true" onblur="actualizarCampo(${idx}, 'sugerenciaVisual', this.innerText)"
+                  class="font-mano text-[1.08em] text-slate-800 mt-2 leading-snug">
+                  "${lamina.sugerenciaVisual}"
+                </p>
+              </div>
+
+              <div class="p-4 rounded-2xl ${pal.datoBoxBg} border-2 shadow-md">
+                <span class="font-escolar text-[0.82em] font-bold uppercase text-amber-300 block mb-1">🇻🇪 Dato Clave Venezuela:</span>
+                <p contenteditable="true" onblur="actualizarCampo(${idx}, 'datoDestacadoVE', this.innerText)"
+                  class="font-mano text-[1.1em] text-white leading-snug">
+                  ${lamina.datoDestacadoVE}
+                </p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // -----------------------------------------------------------------------
+      // ESTILO B: MAPA MENTAL / CONCEPTUAL (Nodo central luminoso y ramas multicolor)
+      // -----------------------------------------------------------------------
+      if (estilo === 'mental') {
+        return `
+          <div class="flex flex-col items-center space-y-6">
+            <!-- Nodo Central -->
+            <div class="max-w-xl w-full p-5 rounded-3xl ${pal.headerBg} ${pal.headerText} text-center shadow-xl border-4 border-amber-300 relative">
+              <span class="inline-block px-3 py-0.5 rounded-full bg-white/20 text-[0.72em] uppercase tracking-widest font-extrabold mb-1.5">
+                🧠 Núcleo Conceptual
+              </span>
+              <p contenteditable="true" onblur="actualizarCampo(${idx}, 'ideaCentral', this.innerText)"
+                class="text-[1.15em] font-extrabold leading-snug">
+                ${lamina.ideaCentral}
+              </p>
+            </div>
+
+            <!-- Conectores visuales coloridos -->
+            <div class="hidden sm:flex items-center justify-around w-3/4 h-7 -my-3">
+              <div class="w-1 h-full bg-amber-400 rounded-full rotate-12"></div>
+              <div class="w-1 h-full bg-blue-500 rounded-full"></div>
+              <div class="w-1 h-full bg-rose-500 rounded-full -rotate-12"></div>
+            </div>
+
+            <!-- Ramificaciones Multicolor -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${Math.min(lamina.bloques.length, 3)} gap-4 w-full">
+              ${lamina.bloques.map((b, bIdx) => {
+                const tintClass = pal.cardTints[bIdx % pal.cardTints.length];
+                const badgeClass = pal.badgeColors[bIdx % pal.badgeColors.length];
+                return `
+                  <div class="p-4 rounded-2xl border-2 ${tintClass} shadow-md relative">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[0.8em] font-extrabold ${badgeClass} mb-3 shadow-xs">
+                      <span>Rama ${bIdx + 1}:</span>
+                      <span contenteditable="true" onblur="actualizarBloqueTitulo(${idx}, ${bIdx}, this.innerText)">${b.tituloBloque}</span>
+                    </div>
+                    <ul class="space-y-2 text-[0.92em] text-slate-900">
+                      ${b.puntos.map((p, pIdx) => `
+                        <li class="flex items-start gap-2 bg-white/80 p-2.5 rounded-xl border border-black/5 shadow-2xs">
+                          <span class="font-black ${pal.subColor}">➜</span>
+                          <span contenteditable="true" onblur="actualizarPunto(${idx}, ${bIdx}, ${pIdx}, this.innerText)">${p}</span>
+                        </li>
+                      `).join('')}
+                    </ul>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+
+            <!-- Síntesis + Apoyo Gráfico -->
+            <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              <div class="p-4 rounded-2xl ${pal.datoBoxBg} border-2 flex items-start gap-3 shadow-md">
+                <span class="text-xl">🇻🇪</span>
+                <div>
+                  <span class="text-[0.75em] font-extrabold uppercase text-amber-300 block">Contexto Nacional</span>
+                  <p contenteditable="true" onblur="actualizarCampo(${idx}, 'datoDestacadoVE', this.innerText)" class="text-[0.9em] text-white mt-0.5">${lamina.datoDestacadoVE}</p>
+                </div>
+              </div>
+              <div class="p-4 rounded-2xl ${pal.visualBoxBg} border-2 flex items-start gap-3 shadow-sm">
+                <span class="text-xl">🎨</span>
+                <div>
+                  <span class="text-[0.75em] font-extrabold uppercase ${pal.titleColor} block">Recurso Visual Sugerido</span>
+                  <p contenteditable="true" onblur="actualizarCampo(${idx}, 'sugerenciaVisual', this.innerText)" class="text-[0.9em] text-slate-800 mt-0.5">${lamina.sugerenciaVisual}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // -----------------------------------------------------------------------
+      // ESTILO C: INFOGRAFÍA MODERNA (Bloques vibrantes, insignias y alto contraste)
+      // -----------------------------------------------------------------------
+      if (estilo === 'infografia') {
+        return `
+          <div class="space-y-5">
+            <!-- Banner de Tesis con degradado -->
+            <div class="p-4 sm:p-5 rounded-2xl ${pal.ideaBg} border-l-8 ${pal.accentBorder} flex items-center gap-4 shadow-sm">
+              <div class="p-3 rounded-2xl ${pal.headerBg} ${pal.headerText} shadow-md shrink-0">
+                <i data-lucide="lightbulb" class="w-6 h-6 text-amber-300"></i>
+              </div>
+              <div>
+                <span class="text-[0.74em] font-black uppercase tracking-wider ${pal.subColor}">Síntesis Clave</span>
+                <p contenteditable="true" onblur="actualizarCampo(${idx}, 'ideaCentral', this.innerText)" class="text-[1.08em] font-bold text-slate-900 leading-snug">
+                  ${lamina.ideaCentral}
+                </p>
+              </div>
+            </div>
+
+            <!-- Tarjetas Numeradas con Fondos Tintados -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${lamina.bloques.map((b, bIdx) => {
+                const tintClass = pal.cardTints[bIdx % pal.cardTints.length];
+                const badgeClass = pal.badgeColors[bIdx % pal.badgeColors.length];
+                return `
+                  <div class="p-4 rounded-2xl border-2 ${tintClass} shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center gap-2.5 mb-3">
+                      <span class="w-8 h-8 rounded-xl ${badgeClass} font-black text-[0.9em] flex items-center justify-center shrink-0 shadow-xs">
+                        0${bIdx + 1}
+                      </span>
+                      <h3 contenteditable="true" onblur="actualizarBloqueTitulo(${idx}, ${bIdx}, this.innerText)" class="font-extrabold text-[1.06em]">
+                        ${b.tituloBloque}
+                      </h3>
+                    </div>
+                    <ul class="space-y-2 text-[0.92em] text-slate-900">
+                      ${b.puntos.map((p, pIdx) => `
+                        <li class="flex items-start gap-2 bg-white/75 px-3 py-1.5 rounded-xl border border-black/5">
+                          <span class="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0"></span>
+                          <span contenteditable="true" onblur="actualizarPunto(${idx}, ${bIdx}, ${pIdx}, this.innerText)">${p}</span>
+                        </li>
+                      `).join('')}
+                    </ul>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+
+            <!-- Franja Inferior: Dato Venezuela + Guía Gráfica -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="md:col-span-2 p-4 rounded-2xl ${pal.datoBoxBg} border-2 flex items-start gap-3 shadow-md">
+                <span class="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[0.75em] shrink-0 shadow-2xs">DATO VE</span>
+                <p contenteditable="true" onblur="actualizarCampo(${idx}, 'datoDestacadoVE', this.innerText)" class="text-[0.94em] text-white leading-snug">
+                  ${lamina.datoDestacadoVE}
+                </p>
+              </div>
+              <div class="p-4 rounded-2xl border-2 border-dashed ${pal.visualBoxBg}">
+                <span class="text-[0.74em] font-extrabold uppercase ${pal.titleColor} block mb-1">🖼️ Apoyo Visual</span>
+                <p contenteditable="true" onblur="actualizarCampo(${idx}, 'sugerenciaVisual', this.innerText)" class="text-[0.86em] text-slate-800 leading-snug font-medium">
+                  ${lamina.sugerenciaVisual}
+                </p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // -----------------------------------------------------------------------
+      // ESTILO D: DIAPOSITIVA UNIVERSITARIA / ACADÉMICA (Elegante con acentos cromáticos)
+      // -----------------------------------------------------------------------
+      return `
+        <div class="space-y-5 font-sans">
+          <!-- Marco Conceptual / Tesis -->
+          <div class="p-4 rounded-2xl ${pal.ideaBg} border-l-4 ${pal.accentBorder} shadow-2xs">
+            <span class="text-[0.72em] font-extrabold uppercase tracking-widest ${pal.titleColor} block mb-1">Premisa / Marco Conceptual</span>
+            <p contenteditable="true" onblur="actualizarCampo(${idx}, 'ideaCentral', this.innerText)"
+              class="font-academico text-[1.05em] text-slate-900 leading-relaxed">
+              ${lamina.ideaCentral}
+            </p>
+          </div>
+
+          <!-- Desarrollo Analítico en Columnas con Tarjetas Tintadas -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${lamina.bloques.map((b, bIdx) => {
+              const tintClass = pal.cardTints[bIdx % pal.cardTints.length];
+              const badgeClass = pal.badgeColors[bIdx % pal.badgeColors.length];
+              return `
+                <div class="p-4 rounded-2xl border ${tintClass} shadow-xs">
+                  <h3 contenteditable="true" onblur="actualizarBloqueTitulo(${idx}, ${bIdx}, this.innerText)"
+                    class="font-extrabold text-[0.98em] uppercase tracking-wide mb-2.5 pb-1.5 border-b border-current/20 flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-md ${badgeClass} text-[0.75em]">${bIdx + 1}</span>
+                    <span>${b.tituloBloque}</span>
+                  </h3>
+                  <ul class="space-y-2 text-[0.9em] text-slate-900 leading-relaxed">
+                    ${b.puntos.map((p, pIdx) => `
+                      <li class="flex items-start gap-2 bg-white/75 px-2.5 py-1.5 rounded-lg">
+                        <span class="font-bold ${pal.subColor}">▪</span>
+                        <span contenteditable="true" onblur="actualizarPunto(${idx}, ${bIdx}, ${pIdx}, this.innerText)">${p}</span>
+                      </li>
+                    `).join('')}
+                  </ul>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Evidencia / Referencia en Venezuela y Esquema Técnico -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4 pt-1">
+            <div class="md:col-span-7 p-4 rounded-2xl ${pal.datoBoxBg} border-l-4 shadow-md">
+              <span class="text-[0.72em] font-extrabold uppercase tracking-wider text-amber-300 block mb-1">
+                🇻🇪 Aplicación / Referencia en el Contexto Venezolano
+              </span>
+              <p contenteditable="true" onblur="actualizarCampo(${idx}, 'datoDestacadoVE', this.innerText)" class="text-[0.9em] text-white">
+                ${lamina.datoDestacadoVE}
+              </p>
+            </div>
+            <div class="md:col-span-5 p-4 rounded-2xl ${pal.visualBoxBg} border">
+              <span class="text-[0.72em] font-extrabold uppercase tracking-wider ${pal.titleColor} block mb-1">
+                📊 Figura / Esquema Sugerido
+              </span>
+              <p contenteditable="true" onblur="actualizarCampo(${idx}, 'sugerenciaVisual', this.innerText)" class="text-[0.86em] text-slate-800 italic">
+                ${lamina.sugerenciaVisual}
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 6. FUNCIONES DE EDICIÓN EN VIVO, NAVEGACIÓN Y UTILIDADES
+    // =========================================================================
+    function actualizarCampo(laminaIdx, campo, valor) {
+      if (estado.datosPresentacion?.laminas?.[laminaIdx]) {
+        estado.datosPresentacion.laminas[laminaIdx][campo] = valor.trim();
+        actualizarModalGuion();
+      }
+    }
+
+    function actualizarBloqueTitulo(laminaIdx, bloqueIdx, valor) {
+      if (estado.datosPresentacion?.laminas?.[laminaIdx]?.bloques?.[bloqueIdx]) {
+        estado.datosPresentacion.laminas[laminaIdx].bloques[bloqueIdx].tituloBloque = valor.trim();
+      }
+    }
+
+    function actualizarPunto(laminaIdx, bloqueIdx, puntoIdx, valor) {
+      if (estado.datosPresentacion?.laminas?.[laminaIdx]?.bloques?.[bloqueIdx]?.puntos) {
+        estado.datosPresentacion.laminas[laminaIdx].bloques[bloqueIdx].puntos[puntoIdx] = valor.trim();
+      }
+    }
+
+    function navegarLamina(direccion) {
+      const total = estado.datosPresentacion?.laminas?.length || 0;
+      if (total <= 1) return;
+      const nuevoIdx = estado.laminaActual + direccion;
+      if (nuevoIdx >= 0 && nuevoIdx < total) {
+        estado.laminaActual = nuevoIdx;
+        renderizarLaminas();
+      }
+    }
+
+    function irALamina(idx) {
+      estado.laminaActual = idx;
+      renderizarLaminas();
+    }
+
+    function actualizarControlesNavegacion() {
+      const total = estado.datosPresentacion?.laminas?.length || 1;
+      const actual = estado.laminaActual;
+
+      document.getElementById('btn-prev-lamina').disabled = actual === 0;
+      document.getElementById('btn-next-lamina').disabled = actual >= total - 1;
+      document.getElementById('fs-contador').textContent = `Lámina ${actual + 1} de ${total}`;
+
+      const indicadores = document.getElementById('indicadores-paginas');
+      indicadores.innerHTML = Array.from({ length: total }, (_, i) => `
+        <button onclick="irALamina(${i})" 
+          class="px-2.5 py-1 rounded-md text-xs font-bold transition ${i === actual ? 'bg-blue-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+          ${i + 1}
+        </button>
+      `).join('');
+    }
+
+    function cambiarPaleta(nuevaPaleta) {
+      estado.paleta = nuevaPaleta;
+      document.querySelectorAll('.paleta-btn').forEach(btn => {
+        btn.classList.remove('ring-2', 'ring-offset-2', 'ring-blue-600', 'scale-110');
+      });
+      const activeBtn = document.getElementById(`pal-btn-${nuevaPaleta}`);
+      if (activeBtn) {
+        activeBtn.classList.add('ring-2', 'ring-offset-2', 'ring-blue-600', 'scale-110');
+      }
+      renderizarLaminas();
+    }
+
+    function cambiarTamanoFuente(delta) {
+      estado.tamanoFuente = Math.min(125, Math.max(80, estado.tamanoFuente + delta * 5));
+      document.getElementById('indicador-fuente').textContent = `${estado.tamanoFuente}%`;
+      renderizarLaminas();
+    }
+
+    function togglePantallaCompleta() {
+      estado.fullscreen = !estado.fullscreen;
+      const ws = document.getElementById('workspace-main');
+      const fsControls = document.getElementById('controles-fullscreen');
+
+      if (estado.fullscreen) {
+        ws.classList.add('fullscreen-overlay');
+        fsControls.classList.remove('hidden');
+      } else {
+        ws.classList.remove('fullscreen-overlay');
+        fsControls.classList.add('hidden');
+      }
+    }
+
+    function imprimirLaminas() {
+      mostrarToast("Preparando láminas en formato horizontal limpio...");
+      setTimeout(() => window.print(), 300);
+    }
+
+    // Modal de Guion de Exposición
+    function actualizarModalGuion() {
+      const data = estado.datosPresentacion;
+      if (!data) return;
+
+      const cont = document.getElementById('contenido-guia-expositor');
+      cont.innerHTML = data.laminas.map((l, i) => `
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold uppercase text-blue-900">Lámina ${i + 1}: ${l.encabezado}</span>
+            <span class="text-[11px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-semibold">${l.etiquetaSeccion}</span>
+          </div>
+          <p class="text-slate-700 leading-relaxed">"${l.guionExpositor}"</p>
+        </div>
+      `).join('');
+    }
+
+    function abrirModalGuia() {
+      actualizarModalGuion();
+      document.getElementById('modal-guia').classList.remove('hidden');
+    }
+
+    function cerrarModalGuia() {
+      document.getElementById('modal-guia').classList.add('hidden');
+    }
+
+    function copiarGuionCompleto() {
+      const data = estado.datosPresentacion;
+      if (!data) return;
+      const texto = data.laminas.map((l, i) => `LÁMINA ${i + 1} (${l.encabezado}):\n${l.guionExpositor}`).join('\n\n');
+      navigator.clipboard.writeText(texto).then(() => {
+        mostrarToast("¡Guion de exposición copiado al portapapeles!");
+      });
+    }
+
+    // Notificaciones Toast elegantes
+    function mostrarToast(mensaje, tipo = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const bg = tipo === 'error' ? 'bg-red-600' : 'bg-slate-900';
+      toast.className = `${bg} text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl border border-white/10 flex items-center gap-2 animate-lamina`;
+      toast.innerHTML = `<span>${tipo === 'error' ? '⚠️' : '✅'}</span><span>${mensaje}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    // =========================================================================
+    // 7. EJEMPLO DE DEMOSTRACIÓN PRECARGADO (CURRÍCULO VENEZOLANO)
+    // =========================================================================
+    function cargarEjemploRapido(notificar = true) {
+      document.getElementById('input-tema').value = "Los Símbolos Naturales y Patrios de Venezuela";
+      estado.datosPresentacion = {
+        tituloGeneral: "Identidad Nacional: Símbolos Patrios y Naturales de Venezuela",
+        subtituloInstitucional: "4to Grado • Ciencias Sociales, Ciudadanía e Identidad",
+        autor: "Estudiante Modelo",
+        grado: "4to Grado",
+        materia: "Ciencias Sociales, Ciudadanía e Identidad",
+        universidad: "",
+        laminas: [
+          {
+            numero: 1,
+            encabezado: "Los Símbolos Patrios de Venezuela",
+            etiquetaSeccion: "Identidad Nacional",
+            ideaCentral: "Los símbolos patrios representan nuestra historia, libertad y soberanía como nación independiente desde 1811.",
+            bloques: [
+              {
+                tituloBloque: "La Bandera Nacional",
+                puntos: [
+                  "Amarillo: Representa las riquezas de nuestra tierra y el oro.",
+                  "Azul: Simboliza el Mar Caribe que baña nuestras costas.",
+                  "Rojo: Honra la sangre derramada por nuestros libertadores.",
+                  "8 Estrellas Blancas: Representan las provincias unidas."
+                ]
+              },
+              {
+                tituloBloque: "El Escudo y el Himno",
+                puntos: [
+                  "Escudo de Armas: Tiene 3 cuarteles (trigo, armas y caballo blanco indómito).",
+                  "Himno Nacional ('Gloria al Bravo Pueblo'): Letra de Vicente Salias y música de Juan José Landaeta."
+                ]
+              }
+            ],
+            datoDestacadoVE: "El 12 de marzo se celebra en Venezuela el Día de la Bandera Nacional en honor a Francisco de Miranda.",
+            sugerenciaVisual: "Dibujar o pegar la Bandera de Venezuela con sus 8 estrellas en arco y el Escudo Nacional en el centro.",
+            guionExpositor: "Buenos días maestros y compañeros. Hoy les voy a hablar sobre nuestros Símbolos Patrios, que nos identifican como venezolanos. Nuestra bandera tiene tres colores hermosos: amarillo por nuestras riquezas, azul por nuestros mares y rojo por el valor de nuestros héroes."
+          },
+          {
+            numero: 2,
+            encabezado: "Símbolos Naturales de Venezuela",
+            etiquetaSeccion: "Biodiversidad Venezolana",
+            ideaCentral: "Además de los símbolos patrios, Venezuela cuenta con tres joyas de nuestra flora y fauna declaradas símbolos naturales.",
+            bloques: [
+              {
+                tituloBloque: "El Araguaney (Árbol Nacional)",
+                puntos: [
+                  "Declarado Árbol Nacional el 29 de mayo de 1948.",
+                  "Su nombre indígena 'aravenei' significa flor de oro.",
+                  "Florece de amarillo intenso tras las primeras lluvias."
+                ]
+              },
+              {
+                tituloBloque: "El Turpial y la Orquídea",
+                puntos: [
+                  "El Turpial: Ave nacional desde 1958, famosa por su canto melodioso y plumaje amarillo-naranja y negro.",
+                  "La Orquídea (Flor de Mayo): Declarada flor nacional en 1951."
+                ]
+              }
+            ],
+            datoDestacadoVE: "La Orquídea Cattleya mossiae fue usada en el siglo XIX para adornar la Cruz de Mayo en las tradiciones venezolanas.",
+            sugerenciaVisual: "Colocar tres recuadros ilustrados con el árbol Araguaney florido, un Turpial cantando y una Orquídea morada.",
+            guionExpositor: "En esta segunda lámina observamos nuestros Símbolos Naturales: el Araguaney que pinta de amarillo nuestros campos, el Turpial con su canto alegre y la Orquídea Flor de Mayo, símbolo de la belleza natural de Venezuela."
+          }
+        ]
+      };
+      estado.laminaActual = 0;
+      renderizarLaminas();
+      actualizarModalGuion();
+      if (notificar) mostrarToast("Ejemplo curricular cargado en el lienzo.");
+    }
+  </script>
+</body>
+</html>
