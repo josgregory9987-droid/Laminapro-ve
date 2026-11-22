@@ -1,0 +1,12 @@
+{
+  "background_color": "#ffffff",
+  "description": "Aplicación web interactiva diseñada para estudiantes y docentes en Venezuela que permite crear láminas expositivas desde 1.er grado de Primaria hasta Educación Universitaria, adaptadas al currículo nacional y asistidas por IA.",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Laminapro-ve",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Laminapro-ve",
+  "start_url": "/",
+  "theme_color": "#ffffff"
+}
